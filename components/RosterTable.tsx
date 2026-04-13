@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Employee, ShiftType, ShiftSymbol, SchedulingConfig, ThursdayScenario, Tool } from '../types';
 import { CELL_STYLES, WEEKDAYS } from '../constants';
 import { getDailyRequirements, getSpecialHolidayName } from '../services/scheduleGenerator';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Lock } from 'lucide-react';
 
 interface RosterTableProps {
   year: number;
@@ -11,6 +11,7 @@ interface RosterTableProps {
   employees: Employee[];
   baseTarget: number;
   onCellClick: (empIndex: number, day: number, shiftClicked?: ShiftType) => void;
+  onToggleLock: (empIndex: number) => void;
   selectedSymbol: Tool;
   config: SchedulingConfig;
   activeScenario: ThursdayScenario;
@@ -36,7 +37,7 @@ const SymbolBadge: React.FC<{ symbol: ShiftSymbol }> = ({ symbol }) => {
 };
 
 const RosterTable: React.FC<RosterTableProps> = ({ 
-    year, month, employees, baseTarget, onCellClick, selectedSymbol,
+    year, month, employees, baseTarget, onCellClick, onToggleLock, selectedSymbol,
     config, activeScenario, usedTuesdayReduction
 }) => {
   const [isStatsExpanded, setIsStatsExpanded] = useState(true);
@@ -110,8 +111,16 @@ const RosterTable: React.FC<RosterTableProps> = ({
                return (
                 <React.Fragment key={emp.id}>
                     <tr className="hover:bg-gray-50 transition-colors h-8 print:h-6 print:break-inside-avoid border-t-2 border-gray-300 print:border-black">
-                        <td rowSpan={3} className="sticky left-0 z-10 bg-white border-r border-b border-gray-300 px-0 py-1 font-bold text-gray-800 text-center text-lg shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] print:shadow-none print:border-black print:static print:text-xs align-middle [writing-mode:vertical-rl] tracking-widest">
-                            {emp.name}
+                        <td 
+                            rowSpan={3} 
+                            className={`sticky left-0 z-10 ${emp.isLocked ? 'bg-gray-200' : 'bg-white'} border-r border-b border-gray-300 px-0 py-1 font-bold text-gray-800 text-center text-lg shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] print:shadow-none print:border-black print:static print:text-xs align-middle [writing-mode:vertical-rl] tracking-widest cursor-pointer hover:bg-gray-100`}
+                            onClick={() => onToggleLock(idx)}
+                            title={emp.isLocked ? "點擊解除鎖定" : "點擊鎖定班表"}
+                        >
+                            <div className="flex items-center justify-center h-full">
+                                {emp.name}
+                                {emp.isLocked && <Lock className="w-3 h-3 text-gray-500 mt-1" />}
+                            </div>
                         </td>
                         
                         <td className="sticky left-[36px] z-10 bg-gray-50/50 border-r border-b border-gray-300 text-center text-[10px] text-gray-500 font-medium align-middle print:border-black print:static print:text-xs">

@@ -139,6 +139,8 @@ const App: React.FC = () => {
       const prefix = `${config.year}-${config.month}-`;
       
       const newEmployees = employees.map(emp => {
+          if (emp.isLocked) return emp; // Skip locked employees
+
           const newShifts = { ...emp.shifts };
           const newManualEntries = { ...(emp.manualEntries || {}) };
           
@@ -187,10 +189,22 @@ const App: React.FC = () => {
       }
   };
 
+  const handleToggleLock = (empIndex: number) => {
+      const newEmployees = [...employees];
+      newEmployees[empIndex] = {
+          ...newEmployees[empIndex],
+          isLocked: !newEmployees[empIndex].isLocked
+      };
+      setEmployees(newEmployees);
+  };
+
   const handleCellClick = (empIndex: number, day: number, shiftClicked?: ShiftType) => {
-      const dateKey = `${config.year}-${config.month}-${day}`;
       const newEmployees = [...employees];
       const emp = newEmployees[empIndex];
+      
+      if (emp.isLocked) return; // Prevent modification if locked
+
+      const dateKey = `${config.year}-${config.month}-${day}`;
       const newShifts = { ...emp.shifts };
       const newManualEntries = { ...(emp.manualEntries || {}) };
       
@@ -452,6 +466,7 @@ const App: React.FC = () => {
         employees={employees}
         baseTarget={baseTarget}
         onCellClick={handleCellClick}
+        onToggleLock={handleToggleLock}
         selectedSymbol={selectedSymbol}
         config={config}
         activeScenario={activeThursdayScenario}

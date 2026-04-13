@@ -154,7 +154,7 @@ export const getDailyRequirements = (
       case ThursdayScenario.B: reqA = 5; reqB = 4; break;
       case ThursdayScenario.C: reqA = 4; reqB = 4; break;
       case ThursdayScenario.C_Plus_Tue: reqA = 4; reqB = 4; break;
-      case ThursdayScenario.D: reqA = 5; reqB = 5; break;
+      case ThursdayScenario.D: reqA = 6; reqB = 5; break;
     }
     return { A: reqA, B: reqB, C: 0, total: reqA + reqB };
   }
@@ -164,9 +164,15 @@ export const getDailyRequirements = (
   let stdC = config.reqStandardC;
   if (dow === 2) {
       if (scenario === ThursdayScenario.D) {
-          stdA = 4; stdB = 4; stdC = 4;
+          stdA = 6; stdB = 4; stdC = 4;
       } else if (useTuesdayReduction) {
           stdB = 4; stdC = 4;
+      }
+  } else if (scenario === ThursdayScenario.D) {
+      stdA = 6;
+      if (dow === 1 || dow === 5) {
+          stdB = 6;
+          stdC = 6;
       }
   }
   return { A: stdA, B: stdB, C: stdC, total: stdA + stdB + stdC };
@@ -267,7 +273,7 @@ const solveThursday = (scenario: ThursdayScenario) => {
     case ThursdayScenario.B: return { numAB: 4, numA: 1 };
     case ThursdayScenario.C: return { numAB: 4, numA: 0 };
     case ThursdayScenario.C_Plus_Tue: return { numAB: 4, numA: 0 };
-    case ThursdayScenario.D: return { numAB: 5, numA: 0 };
+    case ThursdayScenario.D: return { numAB: 5, numA: 1 };
   }
 };
 
@@ -550,27 +556,31 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
   });
 
   employees.forEach(e => {
-    Object.keys(e.shifts).forEach(dateKey => {
-      const [y, m] = dateKey.split('-').map(Number);
-      if (y === year && m === month) {
-          const manual = e.manualEntries?.[dateKey];
-          if (!manual) {
-              delete e.shifts[dateKey];
-          } else if (Array.isArray(manual)) {
-              e.shifts[dateKey] = [...manual];
+    if (e.isLocked) {
+        // Do not clear shifts for locked employees
+    } else {
+        Object.keys(e.shifts).forEach(dateKey => {
+          const [y, m] = dateKey.split('-').map(Number);
+          if (y === year && m === month) {
+              const manual = e.manualEntries?.[dateKey];
+              if (!manual) {
+                  delete e.shifts[dateKey];
+              } else if (Array.isArray(manual)) {
+                  e.shifts[dateKey] = [...manual];
+              }
           }
-      }
-    });
+        });
 
-    // 自動填上週日為 O
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
-      if (date.getDay() === 0) {
-        const dateKey = `${year}-${month}-${d}`;
-        if (!e.manualEntries?.[dateKey]) {
-          e.shifts[dateKey] = 'O';
+        // 自動填上週日為 O
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(year, month, d);
+          if (date.getDay() === 0) {
+            const dateKey = `${year}-${month}-${d}`;
+            if (!e.manualEntries?.[dateKey]) {
+              e.shifts[dateKey] = 'O';
+            }
+          }
         }
-      }
     }
 
     const cleanEmp = recalculateEmployeeStats(e, year, month);
@@ -584,11 +594,11 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
   let finalThuCost = 10;
   if (selectedScenario === ThursdayScenario.B) finalThuCost = 9;
   else if (selectedScenario === ThursdayScenario.C || selectedScenario === ThursdayScenario.C_Plus_Tue) finalThuCost = 8;
-  else if (selectedScenario === ThursdayScenario.D) finalThuCost = 10;
+  else if (selectedScenario === ThursdayScenario.D) finalThuCost = 11;
 
   let finalTueCost = config.reqStandardA + config.reqStandardB + config.reqStandardC;
   if (selectedScenario === ThursdayScenario.D) {
-      finalTueCost = 4 + 4 + 4;
+      finalTueCost = 6 + 4 + 4;
   } else if (useTuesdayReduction) {
       finalTueCost = config.reqStandardA + 4 + 4; 
   }
@@ -607,6 +617,8 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
       if (dow === 6) finalTotalDemand += config.reqSaturdayA;
       else if (dow === 4) finalTotalDemand += finalThuCost;
       else if (dow === 2) finalTotalDemand += finalTueCost;
+      else if (selectedScenario === ThursdayScenario.D && (dow === 1 || dow === 5)) finalTotalDemand += 18;
+      else if (selectedScenario === ThursdayScenario.D && dow === 3) finalTotalDemand += 6 + config.reqStandardB + config.reqStandardC;
       else finalTotalDemand += standardCost;
 
       const priority = calculateDayPriority(d, year, month, employees, config, selectedScenario, useTuesdayReduction);
@@ -667,6 +679,7 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
     const dateKey = `${year}-${month}-${day}`;
     
     const staffPool = employees.filter(e => {
+        if (e.isLocked) return false; // Locked employees are not available for auto-scheduling
         const shift = e.shifts[dateKey];
         if (!shift) return true;
         if (Array.isArray(shift)) {
@@ -710,10 +723,15 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
           reqA = config.reqStandardA; 
           reqB = config.reqStandardB; 
           reqC = config.reqStandardC;
-          if (dow === 2) {
-              if (selectedScenario === ThursdayScenario.D) {
-                  reqA = 4; reqB = 4; reqC = 4;
-              } else if (useTuesdayReduction) {
+          if (selectedScenario === ThursdayScenario.D) {
+              reqA = 6;
+              if (dow === 1 || dow === 5) {
+                  reqB = 6; reqC = 6;
+              } else if (dow === 2) {
+                  reqB = 4; reqC = 4;
+              }
+          } else {
+              if (dow === 2 && useTuesdayReduction) {
                   reqB = 4; reqC = 4;
               }
           }

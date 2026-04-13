@@ -24,6 +24,9 @@ export interface Employee {
   // If true, employee can only work shifts that include 'A' (A, AB, ABC). Cannot work BC.
   noBC?: boolean;
   
+  // If true, the employee's schedule is locked and cannot be modified manually or by auto-scheduler
+  isLocked?: boolean;
+  
   // Stats for display
   generatedShiftCount: number; // Actual shifts assigned (A=1, B=1...)
   targetDeduction: number; // Points to deduct from target based on symbols
