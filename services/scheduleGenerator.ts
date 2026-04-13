@@ -555,6 +555,7 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
       manualEntries: existing ? { ...existing.manualEntries } : {},
       customTarget: existing?.customTarget,
       noBC: existing?.noBC,
+      isLocked: existing?.isLocked,
       generatedShiftCount: 0,
       targetDeduction: 0,
     };
@@ -640,6 +641,7 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
   if (config.autoBalanceOffToSpecial && surplus >= 2) {
       const oEntries: { empId: string, dateKey: string }[] = [];
       employees.forEach(e => {
+          if (e.isLocked) return; // Skip locked employees
           Object.entries(e.manualEntries || {}).forEach(([dateKey, isManual]) => {
               if (isManual && e.shifts[dateKey] === 'O') {
                   const [y, m] = dateKey.split('-').map(Number);

@@ -113,13 +113,13 @@ const RosterTable: React.FC<RosterTableProps> = ({
                     <tr className="hover:bg-gray-50 transition-colors h-8 print:h-6 print:break-inside-avoid border-t-2 border-gray-300 print:border-black">
                         <td 
                             rowSpan={3} 
-                            className={`sticky left-0 z-10 ${emp.isLocked ? 'bg-gray-200' : 'bg-white'} border-r border-b border-gray-300 px-0 py-1 font-bold text-gray-800 text-center text-lg shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] print:shadow-none print:border-black print:static print:text-xs align-middle [writing-mode:vertical-rl] tracking-widest cursor-pointer hover:bg-gray-100`}
+                            className={`sticky left-0 z-10 ${emp.isLocked ? 'bg-gray-200' : 'bg-white'} border-r border-b border-gray-300 px-0 py-1 font-bold text-gray-800 text-center text-lg shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] print:shadow-none print:border-black print:static print:text-xs align-middle cursor-pointer hover:bg-gray-100`}
                             onClick={() => onToggleLock(idx)}
                             title={emp.isLocked ? "點擊解除鎖定" : "點擊鎖定班表"}
                         >
-                            <div className="flex items-center justify-center h-full">
-                                {emp.name}
-                                {emp.isLocked && <Lock className="w-3 h-3 text-gray-500 mt-1" />}
+                            <div className="flex flex-col items-center justify-center h-full py-2">
+                                <span className="[writing-mode:vertical-rl] tracking-widest">{emp.name}</span>
+                                {emp.isLocked && <Lock className="w-4 h-4 text-gray-500 mt-2" />}
                             </div>
                         </td>
                         
