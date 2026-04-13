@@ -146,7 +146,12 @@ export const getDailyRequirements = (
      return { A: 0, B: 0, C: 0, total: 0 };
   }
   if (dow === 0) return { A: 0, B: 0, C: 0, total: 0 };
-  if (dow === 6) return { A: config.reqSaturdayA, B: 0, C: 0, total: config.reqSaturdayA };
+  if (dow === 6) {
+      if (scenario === ThursdayScenario.D) {
+          return { A: 6, B: 0, C: 0, total: 6 };
+      }
+      return { A: config.reqSaturdayA, B: 0, C: 0, total: config.reqSaturdayA };
+  }
   if (dow === 4) { 
     let reqA = 0, reqB = 0;
     switch (scenario) {
@@ -614,7 +619,10 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
       const dow = date.getDay();
       if (dow === 0) continue;
       
-      if (dow === 6) finalTotalDemand += config.reqSaturdayA;
+      if (dow === 6) {
+          if (selectedScenario === ThursdayScenario.D) finalTotalDemand += 6;
+          else finalTotalDemand += config.reqSaturdayA;
+      }
       else if (dow === 4) finalTotalDemand += finalThuCost;
       else if (dow === 2) finalTotalDemand += finalTueCost;
       else if (selectedScenario === ThursdayScenario.D && (dow === 1 || dow === 5)) finalTotalDemand += 18;
@@ -693,7 +701,8 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
 
     if (dow === 6) {
       const { existingA } = getExistingShiftCounts(employees, dateKey);
-      const neededA = Math.max(0, config.reqSaturdayA - existingA);
+      const reqSatA = selectedScenario === ThursdayScenario.D ? 6 : config.reqSaturdayA;
+      const neededA = Math.max(0, reqSatA - existingA);
 
       const poolForSatA = staffPool.filter(e => canWorkShifts(e, dateKey, ['A'], config, daysInMonth, isCriticalDay));
       
