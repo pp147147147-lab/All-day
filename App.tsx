@@ -8,7 +8,7 @@ import { generateSchedule, calculateBaseTarget, validateSchedule, recalculateEmp
 
 const STORAGE_KEY = 'shiftflow_data_v1';
 // 👇 新增這行：將引號裡面的內容，替換成您剛剛複製的長網址 👇
-const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyFJYH28ayS01LZrRFfhUt_O3oI5YFB8jZG--8kGYuHQEmQWTjciQBdDOzUUBAB3fX4/exec'; 
+const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycby1BdDUbGKGJ2jW6otSJ3xOqyylJeVAnJ_MeafySab78XoH51t20s9SEpDa4Mz1Iif0fw/exec'; 
 
 const App: React.FC = () => {
   const today = new Date();
