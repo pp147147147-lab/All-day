@@ -5,6 +5,7 @@ import RosterTable from './components/RosterTable';
 import ClearModal from './components/ClearModal';
 import { SchedulingConfig, Employee, ThursdayScenario, Tool, ShiftType, ShiftSymbol } from './types';
 import { generateSchedule, calculateBaseTarget, validateSchedule, recalculateEmployeeStats, calculateOverviewStats, determineActiveScenario } from './services/scheduleGenerator';
+import { fetchGoogleCalendarLeaveFromAppsScript } from './services/googleCalendar';
 
 const STORAGE_KEY = 'shiftflow_data_v1';
 // 👇 新增這行：將引號裡面的內容，替換成您剛剛複製的長網址 👇
@@ -419,6 +420,75 @@ const App: React.FC = () => {
       alert('❌ 發生錯誤，請確認網址是否正確或網路是否連線。');
     }
   };
+
+  const handleSyncCalendarLeave = async () => {
+    if (!GOOGLE_API_URL) {
+      alert('❌ 尚未設定 GOOGLE_API_URL，無法同步日曆。');
+      return;
+    }
+
+    try {
+      const leaveData = await fetchGoogleCalendarLeaveFromAppsScript(GOOGLE_API_URL, config.year, config.month);
+      console.log('同步到的請假資料:', leaveData);
+      
+      const newEmployees = employees.map(emp => {
+        if (emp.isLocked) return emp;
+
+        const updatedShifts = { ...emp.shifts };
+        const updatedManualEntries = { ...(emp.manualEntries || {}) };
+        let hasChanges = false;
+
+        Object.entries(leaveData).forEach(([rawDateKey, names]) => {
+          // 支援 YYYY-MM-DD 或 YYYY/MM/DD
+          const parts = rawDateKey.split(/[-/]/);
+          if (parts.length !== 3) return;
+          
+          const y = parseInt(parts[0]);
+          const m = parseInt(parts[1]);
+          const d = parseInt(parts[2]);
+          
+          // 關鍵：Apps Script 通常回傳 1-12 月，而 App 內部使用 0-11 月
+          let dateKey = '';
+          if (y === config.year && m === config.month + 1) {
+            // 這是 1-indexed 的情況 (例如 5月回傳 2024-5-15)
+            dateKey = `${y}-${m - 1}-${d}`;
+          } else if (y === config.year && m === config.month) {
+            // 這是 0-indexed 的情況
+            dateKey = `${y}-${m}-${d}`;
+          } else {
+            // 不屬於當前月份，跳過
+            return;
+          }
+
+          if (names.some(name => {
+            const n = String(name).trim();
+            const en = emp.name.trim();
+            return n.includes(en) || en.includes(n);
+          })) {
+            updatedShifts[dateKey] = 'O';
+            updatedManualEntries[dateKey] = true;
+            hasChanges = true;
+          }
+        });
+
+        if (hasChanges) {
+          return {
+            ...emp,
+            shifts: updatedShifts,
+            manualEntries: updatedManualEntries
+          };
+        }
+        return emp;
+      });
+
+      setEmployees(newEmployees);
+      setGridKey(prev => prev + 1);
+      alert('✅ Google 日曆請假同步成功！');
+    } catch (e) {
+      console.error(e);
+      alert('❌ 同步失敗：' + (e instanceof Error ? e.message : '未知錯誤'));
+    }
+  };
   // --- 👆 新增結束 👆 ---
 
   return (
@@ -430,6 +500,9 @@ const App: React.FC = () => {
          </button>
          <button onClick={handleLoadFromCloud} className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-bold text-sm hover:bg-blue-100 transition-colors shadow-sm border border-blue-200">
             📥 從雲端讀取本月班表
+         </button>
+         <button onClick={handleSyncCalendarLeave} className="px-4 py-2 bg-red-50 text-red-700 rounded-lg font-bold text-sm hover:bg-red-100 transition-colors shadow-sm border border-red-200">
+            🗓️ 同步 Google 日曆請假
          </button>
          <button onClick={handleSaveToCloud} className="px-4 py-2 bg-green-50 text-green-700 rounded-lg font-bold text-sm hover:bg-green-100 transition-colors shadow-sm border border-green-200">
             📤 儲存本月班表至雲端
