@@ -169,7 +169,7 @@ export const getDailyRequirements = (
   let stdC = config.reqStandardC;
   if (dow === 2) {
       if (scenario === ThursdayScenario.D) {
-          stdA = 6; stdB = 4; stdC = 4;
+          stdA = 6; stdB = 5; stdC = 5;
       } else if (useTuesdayReduction) {
           stdB = 4; stdC = 4;
       }
@@ -604,7 +604,7 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
 
   let finalTueCost = config.reqStandardA + config.reqStandardB + config.reqStandardC;
   if (selectedScenario === ThursdayScenario.D) {
-      finalTueCost = 6 + 4 + 4;
+      finalTueCost = 6 + 5 + 5;
   } else if (useTuesdayReduction) {
       finalTueCost = config.reqStandardA + 4 + 4; 
   }
@@ -739,7 +739,7 @@ export const generateSchedule = (config: SchedulingConfig, currentEmployees: Emp
               if (dow === 1 || dow === 5) {
                   reqB = 6; reqC = 6;
               } else if (dow === 2) {
-                  reqB = 4; reqC = 4;
+                  reqB = 5; reqC = 5;
               }
           } else {
               if (dow === 2 && useTuesdayReduction) {
